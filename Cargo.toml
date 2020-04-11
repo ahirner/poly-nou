@@ -8,3 +8,9 @@ edition = "2018"
 
 [dependencies]
 nannou = "0.13.1"
+nalgebra = "^0.20"
+ncollide2d = "^0.22"
+nphysics2d = "^0.14"
+rand = "^0.7.3"
+rand_distr = "^0.2"
+lyon = "^0.15"

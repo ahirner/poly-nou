@@ -1,0 +1,10 @@
+[package]
+name = "poly-nou"
+version = "0.1.0"
+authors = ["ahirner <a.hirner@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nannou = "0.13.1"

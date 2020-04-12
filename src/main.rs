@@ -2,7 +2,8 @@ mod entity;
 mod geometry;
 mod render;
 
-use nalgebra::RealField;
+use nalgebra::{Isometry2, RealField};
+use nannou::color::{hsl, IntoLinSrgba};
 use nannou::prelude::*;
 use nphysics2d::force_generator::DefaultForceGeneratorSet;
 use nphysics2d::joint::DefaultJointConstraintSet;
@@ -11,7 +12,7 @@ use nphysics2d::object::{DefaultBodySet, DefaultColliderSet};
 use crate::entity::Entity;
 use crate::geometry::rand_poly;
 use crate::render::Nannou;
-use nannou::draw::properties::SetColor;
+use nphysics2d::world::{DefaultGeometricalWorld, DefaultMechanicalWorld};
 use rand::{thread_rng, Rng};
 
 struct Model<T: RealField = f32> {
@@ -21,28 +22,54 @@ struct Model<T: RealField = f32> {
 }
 
 struct PhysicsWorld<T: RealField = f32> {
+    mechanical_world: DefaultMechanicalWorld<T>,
+    geometrical_world: DefaultGeometricalWorld<T>,
     bodies: DefaultBodySet<T>,
     colliders: DefaultColliderSet<T>,
     force_generators: DefaultForceGeneratorSet<T>,
     joint_constraints: DefaultJointConstraintSet<T>,
 }
 
-fn model(_app: &App) -> Model {
+impl PhysicsWorld {
+    fn step(&mut self) {
+        let mw = &mut self.mechanical_world;
+        mw.step(
+            &mut self.geometrical_world,
+            &mut self.bodies,
+            &mut self.colliders,
+            &mut self.joint_constraints,
+            &mut self.force_generators,
+        );
+    }
+}
+
+fn model(app: &App) -> Model {
+    // set to nphysics default tick time
+    app.set_loop_mode(LoopMode::rate_fps(60.0));
+
     let mut bodies = DefaultBodySet::new();
     let mut colliders = DefaultColliderSet::new();
 
     let mut rng = thread_rng();
 
     let ents_iter = (0..2).map(|_i| {
-        let poly = rand_poly::<Point2>(rng.gen_range(10, 30), 100.0, 20.0, 0.015);
+        let poly = rand_poly::<Point2>(rng.gen_range(10, 30), 50.0, 20.0, 0.015);
         let hue = rng.gen_range(0.0, 1.0);
 
-        let ent = Entity::new(&mut colliders, &mut bodies, poly, 1.0).hsl(hue, 0.7, 0.5);
+        let pos =
+            Isometry2::translation(rng.gen_range(-200.0f32, 200.0), rng.gen_range(0.0f32, 250.0));
+
+        let mut ent = Entity::new(&mut colliders, &mut bodies, poly, 1.0);
+        ent.base_color = Some(hsl(hue, 0.7, 0.5).into_lin_srgba()); // Todo: ergonomics
+        ent.set_body_pos(pos, &mut bodies);
+
         ent
     });
     let ents: Vec<_> = ents_iter.collect();
 
     let world = PhysicsWorld {
+        mechanical_world: DefaultMechanicalWorld::new(nalgebra::Vector2::new(0.0, -9.81)),
+        geometrical_world: DefaultGeometricalWorld::new(),
         bodies: bodies,
         colliders: colliders,
         force_generators: DefaultForceGeneratorSet::new(),
@@ -52,7 +79,9 @@ fn model(_app: &App) -> Model {
     Model { text: "Hello poly-nou!".to_owned(), ents: ents, world: world }
 }
 
-fn update(_app: &App, _model: &mut Model, _update: Update) {}
+fn update(_app: &App, model: &mut Model, _update: Update) {
+    model.world.step()
+}
 
 fn view(app: &App, model: &Model, frame: Frame) {
     let draw = app.draw();

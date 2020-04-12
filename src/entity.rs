@@ -7,6 +7,38 @@ use nphysics2d::object::{
 use rand::prelude::*;
 use rand_distr::StandardNormal;
 
+pub trait CommonPoint2<S: nalgebra::RealField> {
+    // Todo: use associated type?
+    fn new(x: S, y: S) -> Self;
+    fn get_x(&self) -> S;
+    fn get_y(&self) -> S;
+}
+
+impl<S: nalgebra::RealField> CommonPoint2<S> for Point2<S> {
+    fn new(x: S, y: S) -> Self {
+        pt2(x, y)
+    }
+    fn get_x(&self) -> S {
+        self.x
+    }
+    fn get_y(&self) -> S {
+        self.y
+    }
+}
+
+impl<S: nalgebra::RealField> CommonPoint2<S> for nalgebra::Point2<S> {
+    fn new(x: S, y: S) -> Self {
+        nalgebra::Point2::new(x, y)
+    }
+    fn get_x(&self) -> S {
+        self.coords.as_slice()[0]
+    }
+    // Todo: use index instead?
+    fn get_y(&self) -> S {
+        self.coords.as_slice()[1]
+    }
+}
+
 /// A shape with world position, body, annotation and other instance-specific info
 pub struct Entity {
     label: String,
@@ -16,17 +48,17 @@ pub struct Entity {
     collider_handle: DefaultColliderHandle,
 }
 
-/// Malleable specification of a contour, does not include a closing Point2
-pub type Polygon2 = Vec<Point2<f32>>;
-
-pub fn rand_poly(mean_rad: f32, std_rad: f32, n_verts: usize) -> Polygon2 {
+pub fn rand_poly<T>(mean_rad: f32, std_rad: f32, n_verts: usize) -> impl Iterator<Item = T>
+where
+    T: CommonPoint2<f32>,
+{
     let mut rng = thread_rng();
 
     assert!(n_verts >= 2);
     assert!(mean_rad > 0.0);
 
     let mut last_phase = 0.0f32;
-    let points = (0..n_verts - 1).map(|i| {
+    let points = (0..n_verts - 1).map(move |i| {
         // angle
         let fract: f32 = i as f32 / n_verts as f32; // one less for closing
         let rand_phase: f32 = rng.sample(StandardNormal);
@@ -40,28 +72,31 @@ pub fn rand_poly(mean_rad: f32, std_rad: f32, n_verts: usize) -> Polygon2 {
         let x = rad * (TAU * phase).cos();
         let y = rad * (TAU * phase).sin();
 
-        pt2(x, y)
+        T::new(x, y)
     });
 
-    points.collect()
+    points
 }
 
 impl Entity {
-    pub fn new(
+    pub fn new<I>(
         collider_set: &mut DefaultColliderSet<f32>,
         body_set: &mut DefaultBodySet<f32>,
         label: &str,
-        polygon: Polygon2,
+        polygon: I,
         color: Rgb<u8>,
         density: f32,
-    ) -> Self {
+    ) -> Self
+    where
+        I: IntoIterator,
+        I::Item: CommonPoint2<f32>,
+    {
         let body_builder = RigidBodyDesc::new();
         let body = body_builder.build();
         let body_handle = body_set.insert(body);
 
-        // Todo: should be more efficient, not back and forth conversion
         let vec_vec: Vec<nalgebra::Point2<f32>> =
-            polygon.into_iter().map(|p| nalgebra::Point2::new(p.x, p.y)).collect();
+            polygon.into_iter().map(|p| nalgebra::Point2::new(p.get_x(), p.get_y())).collect();
 
         // Todo: does Polyline require closed or open?
         let poly_line = Polyline::new(vec_vec, None);

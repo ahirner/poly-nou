@@ -21,7 +21,7 @@ fn model(_app: &App) -> Model {
     let mut bodies = DefaultBodySet::new();
     let mut colliders = DefaultColliderSet::new();
 
-    let poly = rand_poly(20.0, 2.0, 30);
+    let poly = rand_poly::<Point2>(20.0, 2.0, 30);
     let ent = Entity::new(&mut colliders, &mut bodies, "aBc", poly, PURPLE, 1.0);
 
     Model {

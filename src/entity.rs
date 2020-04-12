@@ -12,6 +12,14 @@ pub trait CommonPoint2<S: nalgebra::RealField> {
     fn new(x: S, y: S) -> Self;
     fn get_x(&self) -> S;
     fn get_y(&self) -> S;
+
+    fn into_nannou(&self) -> Point2<S> {
+        pt2(self.get_x(), self.get_y())
+    }
+
+    fn into_nalgebra(&self) -> nalgebra::Point2<S> {
+        nalgebra::Point2::new(self.get_x(), self.get_y())
+    }
 }
 
 impl<S: nalgebra::RealField> CommonPoint2<S> for Point2<S> {
@@ -96,7 +104,7 @@ impl Entity {
         let body_handle = body_set.insert(body);
 
         let vec_vec: Vec<nalgebra::Point2<f32>> =
-            polygon.into_iter().map(|p| nalgebra::Point2::new(p.get_x(), p.get_y())).collect();
+            polygon.into_iter().map(|p| p.into_nalgebra()).collect();
 
         // Todo: does Polyline require closed or open?
         let poly_line = Polyline::new(vec_vec, None);

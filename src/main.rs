@@ -11,10 +11,12 @@ use nphysics2d::object::{DefaultBodySet, DefaultColliderSet};
 use crate::entity::Entity;
 use crate::geometry::rand_poly;
 use crate::render::Nannou;
+use nannou::draw::properties::SetColor;
+use rand::{thread_rng, Rng};
 
 struct Model<T: RealField = f32> {
     text: String,
-    ent: Entity,
+    ents: Vec<Entity>,
     world: PhysicsWorld<T>,
 }
 
@@ -29,8 +31,16 @@ fn model(_app: &App) -> Model {
     let mut bodies = DefaultBodySet::new();
     let mut colliders = DefaultColliderSet::new();
 
-    let poly = rand_poly::<Point2>(30, 100.0, 15.0, 0.01);
-    let ent = Entity::new(&mut colliders, &mut bodies, poly, PURPLE, 1.0);
+    let mut rng = thread_rng();
+
+    let ents_iter = (0..2).map(|_i| {
+        let poly = rand_poly::<Point2>(rng.gen_range(10, 30), 100.0, 20.0, 0.015);
+        let hue = rng.gen_range(0.0, 1.0);
+
+        let ent = Entity::new(&mut colliders, &mut bodies, poly, 1.0).hsl(hue, 0.7, 0.5);
+        ent
+    });
+    let ents: Vec<_> = ents_iter.collect();
 
     let world = PhysicsWorld {
         bodies: bodies,
@@ -39,7 +49,7 @@ fn model(_app: &App) -> Model {
         joint_constraints: DefaultJointConstraintSet::new(),
     };
 
-    Model { text: "Hello poly-nou!".to_owned(), ent: ent, world: world }
+    Model { text: "Hello poly-nou!".to_owned(), ents: ents, world: world }
 }
 
 fn update(_app: &App, _model: &mut Model, _update: Update) {}
@@ -53,7 +63,9 @@ fn view(app: &App, model: &Model, frame: Frame) {
     draw.polygon();
     draw.text(text).align_text_top().color(WHITE).font_size(24).wh(win_rect.wh());
 
-    model.ent.display(&draw, &model.world.bodies, &model.world.colliders);
+    for ent in model.ents.iter() {
+        ent.display(&draw, &model.world.bodies, &model.world.colliders);
+    }
 
     draw.to_frame(app, &frame).unwrap();
 }

@@ -1,5 +1,6 @@
 use crate::geometry::CommonPoint2;
 use crate::render::Nannou;
+use nannou::draw::properties::{ColorScalar, SetColor};
 use nannou::prelude::*;
 use ncollide2d::shape::{Polyline, ShapeHandle};
 use nphysics2d::object::{
@@ -10,7 +11,7 @@ use nphysics2d::object::{
 /// A shape with world position, body, annotation and other instance-specific info
 pub struct Entity {
     pub label: Option<String>,
-    pub base_color: Rgb<u8>,
+    pub base_color: Option<LinSrgba<f32>>,
     pub density: f32,
     pub body_handle: DefaultBodyHandle,
     pub collider_handle: DefaultColliderHandle,
@@ -21,7 +22,6 @@ impl Entity {
         collider_set: &mut DefaultColliderSet<f32>,
         body_set: &mut DefaultBodySet<f32>,
         polygon: I,
-        color: Rgb<u8>,
         density: f32,
     ) -> Self
     where
@@ -45,7 +45,7 @@ impl Entity {
 
         Entity {
             label: None,
-            base_color: color,
+            base_color: None,
             density: density,
             body_handle: body_handle,
             collider_handle: collider_handle,
@@ -71,16 +71,26 @@ impl Nannou for Entity {
 
         let points = shape.points().iter().map(CommonPoint2::into_nannou);
 
-        draw.polyline()
-            .color(self.base_color)
+        let draw_poly = draw
+            .polyline()
             //.stroke(PINK)
             .stroke_weight(2.0)
             .join_round()
             .points(points);
 
+        if let Some(c) = self.base_color {
+            draw_poly.color(c);
+        };
+
         let _draw_label = self.label.as_ref().map_or_else(
             || draw.text(&format!("{}-gon", shape.points().len())).color(GRAY),
             |s| draw.text(s).color(WHITE),
         );
+    }
+}
+
+impl SetColor<ColorScalar> for Entity {
+    fn rgba_mut(&mut self) -> &mut Option<LinSrgba<f32>> {
+        SetColor::rgba_mut(&mut self.base_color)
     }
 }

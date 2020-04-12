@@ -49,14 +49,19 @@ impl<S: nalgebra::RealField> CommonPoint2<S> for nalgebra::Point2<S> {
 
 /// A shape with world position, body, annotation and other instance-specific info
 pub struct Entity {
-    label: String,
-    base_color: Rgb<u8>,
-    density: f32,
-    body_handle: DefaultBodyHandle,
-    collider_handle: DefaultColliderHandle,
+    pub label: String,
+    pub base_color: Rgb<u8>,
+    pub density: f32,
+    pub body_handle: DefaultBodyHandle,
+    pub collider_handle: DefaultColliderHandle,
 }
 
-pub fn rand_poly<T>(mean_rad: f32, std_rad: f32, n_verts: usize) -> impl Iterator<Item = T>
+pub fn rand_poly<T>(
+    n_verts: usize,
+    mean_rad: f32,
+    std_rad: f32,
+    std_phase: f32,
+) -> impl Iterator<Item = T>
 where
     T: CommonPoint2<f32>,
 {
@@ -70,7 +75,7 @@ where
         // angle
         let fract: f32 = i as f32 / n_verts as f32; // one less for closing
         let rand_phase: f32 = rng.sample(StandardNormal);
-        let phase = (fract + rand_phase * 0.5).max(last_phase);
+        let phase = (fract + rand_phase * std_phase).max(last_phase);
         last_phase = phase;
 
         // radius

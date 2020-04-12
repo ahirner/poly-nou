@@ -17,11 +17,48 @@ struct Model<T: RealField = f32> {
     ent: Entity,
 }
 
+/// Things that can be drawn to the screen
+trait Nannou {
+    fn display(
+        &self,
+        draw: &app::Draw,
+        body_set: &DefaultBodySet<f32>,
+        collider_set: &DefaultColliderSet<f32>,
+    );
+    fn update(&mut self) {}
+}
+
+impl Nannou for Entity {
+    fn display(
+        &self,
+        draw: &app::Draw,
+        body_set: &DefaultBodySet<f32>,
+        collider_set: &DefaultColliderSet<f32>,
+    ) {
+        let _body = body_set.rigid_body(self.body_handle);
+        let collider = collider_set.get(self.collider_handle).unwrap();
+        let shape = collider.shape().as_shape::<ncollide2d::shape::Polyline<f32>>().unwrap();
+        // hax
+        let points: Vec<_> = shape
+            .points()
+            .into_iter()
+            .map(|p| pt2(p.coords.as_slice()[0], p.coords.as_slice()[1]))
+            .collect();
+
+        draw.polyline()
+            .color(self.base_color)
+            //.stroke(PINK)
+            .stroke_weight(2.0)
+            .join_round()
+            .points(points);
+    }
+}
+
 fn model(_app: &App) -> Model {
     let mut bodies = DefaultBodySet::new();
     let mut colliders = DefaultColliderSet::new();
 
-    let poly = rand_poly::<Point2>(20.0, 2.0, 30);
+    let poly = rand_poly::<Point2>(30, 100.0, 5.0, 0.1);
     let ent = Entity::new(&mut colliders, &mut bodies, "aBc", poly, PURPLE, 1.0);
 
     Model {
@@ -44,6 +81,9 @@ fn view(app: &App, model: &Model, frame: Frame) {
     let text = model.text.borrow();
     draw.polygon();
     draw.text(text).color(WHITE).font_size(24).wh(win_rect.wh());
+
+    model.ent.display(&draw, &model.bodies, &model.colliders);
+
     draw.to_frame(app, &frame).unwrap();
 }
 

@@ -30,7 +30,7 @@ fn model(_app: &App) -> Model {
     let mut colliders = DefaultColliderSet::new();
 
     let poly = rand_poly::<Point2>(30, 100.0, 15.0, 0.01);
-    let ent = Entity::new(&mut colliders, &mut bodies, "aBc", poly, PURPLE, 1.0);
+    let ent = Entity::new(&mut colliders, &mut bodies, poly, PURPLE, 1.0);
 
     let world = PhysicsWorld {
         bodies: bodies,
@@ -39,7 +39,7 @@ fn model(_app: &App) -> Model {
         joint_constraints: DefaultJointConstraintSet::new(),
     };
 
-    Model { text: "Hello world!".to_owned(), ent: ent, world: world }
+    Model { text: "Hello poly-nou!".to_owned(), ent: ent, world: world }
 }
 
 fn update(_app: &App, _model: &mut Model, _update: Update) {}
@@ -51,7 +51,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
     let win_rect = app.main_window().rect().pad(20.0);
     let text = model.text.as_str();
     draw.polygon();
-    draw.text(text).color(WHITE).font_size(24).wh(win_rect.wh());
+    draw.text(text).align_text_top().color(WHITE).font_size(24).wh(win_rect.wh());
 
     model.ent.display(&draw, &model.world.bodies, &model.world.colliders);
 

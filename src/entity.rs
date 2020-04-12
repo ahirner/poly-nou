@@ -9,7 +9,7 @@ use nphysics2d::object::{
 
 /// A shape with world position, body, annotation and other instance-specific info
 pub struct Entity {
-    pub label: String,
+    pub label: Option<String>,
     pub base_color: Rgb<u8>,
     pub density: f32,
     pub body_handle: DefaultBodyHandle,
@@ -20,7 +20,6 @@ impl Entity {
     pub fn new<I>(
         collider_set: &mut DefaultColliderSet<f32>,
         body_set: &mut DefaultBodySet<f32>,
-        label: &str,
         polygon: I,
         color: Rgb<u8>,
         density: f32,
@@ -45,12 +44,17 @@ impl Entity {
         let collider_handle = collider_set.insert(collider);
 
         Entity {
-            label: label.to_owned(),
+            label: None,
             base_color: color,
             density: density,
             body_handle: body_handle,
             collider_handle: collider_handle,
         }
+    }
+
+    pub fn set_label(&mut self, label: &str) -> &mut Self {
+        self.label = Some(label.to_owned());
+        self
     }
 }
 
@@ -73,5 +77,10 @@ impl Nannou for Entity {
             .stroke_weight(2.0)
             .join_round()
             .points(points);
+
+        let _draw_label = self.label.as_ref().map_or_else(
+            || draw.text(&format!("{}-gon", shape.points().len())).color(GRAY),
+            |s| draw.text(s).color(WHITE),
+        );
     }
 }

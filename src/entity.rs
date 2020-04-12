@@ -61,7 +61,7 @@ impl Entity {
 impl Nannou for Entity {
     fn display(
         &self,
-        draw: &app::Draw,
+        draw: &Draw,
         body_set: &DefaultBodySet<f32>,
         collider_set: &DefaultColliderSet<f32>,
     ) {

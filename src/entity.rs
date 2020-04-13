@@ -2,6 +2,7 @@ use crate::geometry::CommonPoint2;
 use crate::render::Nannou;
 use nalgebra::Isometry2;
 use nannou::color::IntoLinSrgba;
+use nannou::draw::properties::ColorScalar;
 use nannou::prelude::*;
 use ncollide2d::shape::{ConvexPolygon, Cuboid, Polyline, ShapeHandle};
 use nphysics2d::object::{
@@ -11,8 +12,8 @@ use nphysics2d::object::{
 
 /// A shape with world position, body, annotation and other instance-specific info
 pub struct Entity {
-    pub label: Option<String>,
-    pub base_color: Option<LinSrgba<f32>>,
+    label: Option<String>,
+    base_color: Option<LinSrgba<f32>>,
     body_handle: DefaultBodyHandle,
     collider_handle: DefaultColliderHandle,
 }
@@ -77,7 +78,7 @@ impl Entity {
 
         Entity {
             label: None,
-            base_color: Some(PURPLE.into_lin_srgba()),
+            base_color: None,
             body_handle: ground_handle,
             collider_handle: collider_handle,
         }
@@ -95,6 +96,33 @@ impl Entity {
             Some(body) => Some(f(body)),
             None => None,
         }
+    }
+    /// set user-defined base color
+    /// akin to nannou::draw::drawing::SetColor
+    pub fn set_color<C>(&mut self, color: C) -> &mut Self
+    where
+        C: IntoLinSrgba<ColorScalar>,
+    {
+        self.base_color = Some(color.into_lin_srgba());
+        self
+    }
+
+    /// remove base color
+    pub fn unset_color(&mut self) -> &mut Self {
+        self.base_color = None;
+        self
+    }
+
+    /// set user-defined label
+    pub fn set_label(&mut self, label: &str) -> &mut Self {
+        self.label = Some(label.into());
+        self
+    }
+
+    /// remove label
+    pub fn unset_label(&mut self) -> &mut Self {
+        self.label = None;
+        self
     }
 }
 

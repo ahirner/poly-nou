@@ -3,7 +3,7 @@ mod geometry;
 mod render;
 
 use nalgebra::{Isometry2, RealField};
-use nannou::color::{hsl, IntoLinSrgba};
+use nannou::color::hsl;
 use nannou::prelude::*;
 use nphysics2d::force_generator::DefaultForceGeneratorSet;
 use nphysics2d::joint::DefaultJointConstraintSet;
@@ -60,27 +60,28 @@ fn model(app: &App) -> Model {
 
     let ents_iter = (0..10).map(|_i| {
         let poly = rand_poly::<Point2>(rng.gen_range(10, 20), 50.0, 20.0, 0.015);
+        let mut ent = Entity::new_poly(&mut colliders, &mut bodies, poly, 1.0);
 
         let pos = Isometry2::translation(
             rng.gen_range(spawn_rect.x.start, spawn_rect.x.end),
             rng.gen_range(spawn_rect.y.start, window_rect.y.end),
         );
-
-        let mut ent = Entity::new_poly(&mut colliders, &mut bodies, poly, 1.0);
         ent.map_body_mut(&mut bodies, |b| b.set_position(pos));
 
         let hue = rng.gen_range(0.0, 1.0);
-        ent.base_color = Some(hsl(hue, 0.7, 0.5).into_lin_srgba()); // Todo: ergonomics
+        ent.set_color(hsl(hue, 0.7, 0.5));
 
         ent
     });
-    let mut ents: Vec<_> = ents_iter.collect();
+    let mut ents: Vec<Entity> = ents_iter.collect();
 
-    ents.push(Entity::new_ground(
+    let mut ground = Entity::new_ground(
         &mut colliders,
         &mut bodies,
         &window_rect.pad_top(window_rect.y.len() - 40.0).pad_left(20.0).pad_right(20.0),
-    ));
+    );
+    ground.set_color(PURPLE);
+    ents.push(ground);
 
     let world = PhysicsWorld {
         mechanical_world: DefaultMechanicalWorld::new(nalgebra::Vector2::new(0.0, -98.1)),

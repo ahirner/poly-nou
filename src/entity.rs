@@ -72,7 +72,7 @@ impl Entity {
         let ground_handle = bodies.insert(Ground::new());
 
         let co = ColliderDesc::new(ground_shape)
-            .translation(pt2(center_x, center_y).into_nalgebra().coords)
+            .translation(CommonPoint2::new(center_x, center_y))
             .build(BodyPartHandle(ground_handle, 0));
 
         let collider_handle = colliders.insert(co);
@@ -142,7 +142,6 @@ impl Nannou for Entity {
                 || draw.text(&format!("{}-gon", shape.points().len())).color(GRAY),
                 |s| draw.text(s).color(WHITE),
             );
-
             draw_label.xy(center);
 
             let points = shape.points().iter().map(CommonPoint2::into_nannou);
@@ -163,6 +162,12 @@ impl Nannou for Entity {
                 .rotate(rotation) // transform
                 .xy(center)
                 .wh(extents); // geometry
+
+            let draw_label = self
+                .label
+                .as_ref()
+                .map_or_else(|| draw.text("Cuboid").color(GRAY), |s| draw.text(s).color(WHITE));
+            draw_label.xy(center);
         } else {
             unimplemented!("Displaying shape not supported");
         };

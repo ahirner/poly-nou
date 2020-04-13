@@ -18,7 +18,7 @@ pub struct Entity {
 }
 
 impl Entity {
-    pub fn new<I>(
+    pub fn new_poly<I>(
         colliders: &mut DefaultColliderSet<f32>,
         bodies: &mut DefaultBodySet<f32>,
         polygon: I,
@@ -37,7 +37,7 @@ impl Entity {
 
         // Todo: does Polyline require closed or open?
         //let poly = Polyline::new(vec_vec, None);
-        // Todo: make a faux convex shape for now
+        // Todo: make a faux convex shape for now, need compound shape of convex parts
         let poly = ConvexPolygon::try_new(vec_vec)
             .expect("Could not form convex shape from polygon points");
         let shape = ShapeHandle::new(poly);
@@ -59,21 +59,20 @@ impl Entity {
         bodies: &mut DefaultBodySet<f32>,
         rect: &Rect,
     ) -> Self {
-        let half_width = (rect.x.end - rect.x.start) / 2.;
-        let center_x = (rect.x.start + rect.x.end) / 2.;
-        let half_height = (rect.y.end - rect.y.start) / 2.;
-        let center_y = (rect.y.start + rect.y.end) / 2.;
+        let half_width = rect.x.len() / 2.;
+        let center_x = rect.x.middle();
+        let half_height = rect.y.len() / 2.;
+        let center_y = rect.y.middle();
 
         let ground_shape =
             ShapeHandle::new(Cuboid::new(nalgebra::Vector2::new(half_width, half_height)));
 
-        // Build a static ground body and add it to the body set.
         let ground_handle = bodies.insert(Ground::new());
 
         let co = ColliderDesc::new(ground_shape)
             .translation(pt2(center_x, center_y).into_nalgebra().coords)
             .build(BodyPartHandle(ground_handle, 0));
-        // Add the collider to the collider set.
+
         let collider_handle = colliders.insert(co);
 
         Entity {
@@ -84,8 +83,8 @@ impl Entity {
         }
     }
 
-    /// Set body position if the entity has a body (i.e. no ground)
-    pub fn map_body<U, F: FnOnce(&mut RigidBody<f32>) -> U>(
+    /// Mutate body if entity has a one (i.e. no ground)
+    pub fn map_body_mut<U, F: FnOnce(&mut RigidBody<f32>) -> U>(
         &self,
         bodies: &mut DefaultBodySet<f32>,
         f: F,

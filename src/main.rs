@@ -58,16 +58,16 @@ fn model(app: &App) -> Model {
     let window_rect = app.main_window().rect();
     let spawn_rect = window_rect.pad_bottom(window_rect.y.end);
 
-    let ents_iter = (0..20).map(|_i| {
-        let poly = rand_poly::<Point2>(rng.gen_range(10, 30), 50.0, 20.0, 0.015);
+    let ents_iter = (0..10).map(|_i| {
+        let poly = rand_poly::<Point2>(rng.gen_range(10, 20), 50.0, 20.0, 0.015);
 
         let pos = Isometry2::translation(
             rng.gen_range(spawn_rect.x.start, spawn_rect.x.end),
             rng.gen_range(spawn_rect.y.start, window_rect.y.end),
         );
 
-        let mut ent = Entity::new(&mut colliders, &mut bodies, poly, 1.0);
-        ent.map_body(&mut bodies, |b| b.set_position(pos));
+        let mut ent = Entity::new_poly(&mut colliders, &mut bodies, poly, 1.0);
+        ent.map_body_mut(&mut bodies, |b| b.set_position(pos));
 
         let hue = rng.gen_range(0.0, 1.0);
         ent.base_color = Some(hsl(hue, 0.7, 0.5).into_lin_srgba()); // Todo: ergonomics
@@ -107,7 +107,7 @@ fn window_moved(_app: &App, model: &mut Model, pos: Point2) {
         let delta_y = delta.y.max(0.0);
         let delta_x = delta.x;
         for ent in model.ents.iter() {
-            ent.map_body(&mut model.world.bodies, |b| {
+            ent.map_body_mut(&mut model.world.bodies, |b| {
                 b.set_position(Isometry2::translation(delta_x, delta_y) * b.position())
             });
         }

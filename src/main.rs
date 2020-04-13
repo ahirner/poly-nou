@@ -59,7 +59,7 @@ fn model(app: &App) -> Model {
     let spawn_rect = window_rect.pad_bottom(window_rect.y.end);
 
     let ents_iter = (0..10).map(|_i| {
-        let poly = rand_poly::<Point2>(rng.gen_range(10, 20), 50.0, 20.0, 0.015);
+        let poly = rand_poly::<Point2>(rng.gen_range(10, 20), 50.0, 2.0, 0.015);
         let mut ent = Entity::new_poly(&mut colliders, &mut bodies, poly, 1.0);
 
         let pos = Isometry2::translation(
@@ -103,8 +103,7 @@ fn window_moved(_app: &App, model: &mut Model, pos: Point2) {
     // move entities with rigid body the opposite way
     if let Some(p0) = model.orig_screen_pos {
         let delta = p0 - pos;
-        // iff the window moved down
-        // Todo: things go through ground too easily
+        // Todo: .. iff the window moved down because things go through ground too easily
         let delta_y = delta.y.max(0.0);
         let delta_x = delta.x;
         for ent in model.ents.iter() {

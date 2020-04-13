@@ -42,6 +42,20 @@ impl<S: nalgebra::RealField> CommonPoint2<S> for nalgebra::Point2<S> {
     }
 }
 
+impl<S: nalgebra::RealField> CommonPoint2<S> for nalgebra::Vector2<S> {
+    fn new(x: S, y: S) -> Self {
+        nalgebra::Point2::new(x, y).coords
+    }
+
+    fn get_x(&self) -> S {
+        self.as_slice()[0]
+    }
+
+    fn get_y(&self) -> S {
+        self.as_slice()[1]
+    }
+}
+
 /// Creates n_verts of a circle centered around 0 with random deviations in
 /// radius and angle for each point, the points are not closed
 pub fn rand_poly<T>(

@@ -129,11 +129,11 @@ impl Entity {
 impl Nannou for Entity {
     fn display(&self, draw: &Draw, colliders: &DefaultColliderSet<f32>) {
         let collider = colliders.get(self.collider_handle).unwrap();
-        //let shape = collider.shape().as_shape::<Polyline<f32>>().unwrap();
         let dyn_shape = collider.shape();
 
         let pos: Isometry2<f32> = *collider.position();
-        let center: nalgebra::Point2<f32> = pos.clone().translation.vector.into();
+        let center = pos.translation.vector.into_nannou();
+        let rotation: f32 = pos.rotation.arg();
 
         // Todo: generalize
         if let Some(shape) = dyn_shape.as_shape::<ConvexPolygon<f32>>() {
@@ -142,10 +142,16 @@ impl Nannou for Entity {
                 |s| draw.text(s).color(WHITE),
             );
 
-            draw_label.xy(center.into_nannou());
+            draw_label.xy(center);
 
-            let points = shape.points().iter().map(|p| (pos * p).into_nannou());
-            let draw_poly = draw.polyline().stroke_weight(2.0).join_round().points(points);
+            let points = shape.points().iter().map(CommonPoint2::into_nannou);
+            let draw_poly = draw
+                .polyline()
+                .stroke_weight(2.0)
+                .join_round()
+                .rotate(rotation)
+                .xy(center)
+                .points(points);
             if let Some(c) = self.base_color {
                 draw_poly.color(c);
             };
@@ -155,7 +161,8 @@ impl Nannou for Entity {
                 .rect()
                 .w(half_extents.x * 2.0)
                 .h(half_extents.y * 2.0)
-                .xy(center.into_nannou());
+                .rotate(rotation)
+                .xy(center);
             if let Some(c) = self.base_color {
                 draw_cuboid.color(c);
             };

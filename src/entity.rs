@@ -2,7 +2,8 @@ use crate::geometry::CommonPoint2;
 use crate::render::Nannou;
 use nalgebra::Isometry2;
 use nannou::color::IntoLinSrgba;
-use nannou::draw::properties::ColorScalar;
+use nannou::draw::primitive::polygon::SetPolygon;
+use nannou::draw::properties::{ColorScalar, SetColor};
 use nannou::prelude::*;
 use ncollide2d::shape::{ConvexPolygon, Cuboid, Polyline, ShapeHandle};
 use nphysics2d::object::{
@@ -145,27 +146,23 @@ impl Nannou for Entity {
             draw_label.xy(center);
 
             let points = shape.points().iter().map(CommonPoint2::into_nannou);
-            let draw_poly = draw
-                .polyline()
+            let _draw_poly = draw
+                .polygon() // primitive
+                .no_fill() // styling ...
                 .stroke_weight(2.0)
                 .join_round()
-                .rotate(rotation)
+                .map_ty(|p| if let Some(c) = self.base_color { p.stroke_color(c) } else { p })
+                .rotate(rotation) // transform
                 .xy(center)
-                .points(points);
-            if let Some(c) = self.base_color {
-                draw_poly.color(c);
-            };
+                .points(points); // geometry
         } else if let Some(shape) = dyn_shape.as_shape::<Cuboid<f32>>() {
-            let half_extents = shape.half_extents();
-            let draw_cuboid = draw
-                .rect()
-                .w(half_extents.x * 2.0)
-                .h(half_extents.y * 2.0)
-                .rotate(rotation)
-                .xy(center);
-            if let Some(c) = self.base_color {
-                draw_cuboid.color(c);
-            };
+            let extents = (shape.half_extents() * 2.0).into_nannou();
+            let _draw_cuboid = draw
+                .rect() // primitive
+                .map_ty(|p| if let Some(c) = self.base_color { p.color(c) } else { p }) // styling
+                .rotate(rotation) // transform
+                .xy(center)
+                .wh(extents); // geometry
         } else {
             unimplemented!("Displaying shape not supported");
         };

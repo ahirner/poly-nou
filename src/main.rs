@@ -51,13 +51,16 @@ fn model(app: &App) -> Model {
     let mut colliders = DefaultColliderSet::new();
 
     let mut rng = thread_rng();
+    let window_rect = app.main_window().rect();
 
-    let ents_iter = (0..2).map(|_i| {
+    let ents_iter = (0..20).map(|_i| {
         let poly = rand_poly::<Point2>(rng.gen_range(10, 30), 50.0, 20.0, 0.015);
         let hue = rng.gen_range(0.0, 1.0);
 
-        let pos =
-            Isometry2::translation(rng.gen_range(-200.0f32, 200.0), rng.gen_range(0.0f32, 250.0));
+        let pos = Isometry2::translation(
+            rng.gen_range(window_rect.x.start, window_rect.x.end),
+            rng.gen_range(0.0f32, window_rect.y.end),
+        );
 
         let mut ent = Entity::new(&mut colliders, &mut bodies, poly, 1.0);
         ent.base_color = Some(hsl(hue, 0.7, 0.5).into_lin_srgba()); // Todo: ergonomics
@@ -65,10 +68,16 @@ fn model(app: &App) -> Model {
 
         ent
     });
-    let ents: Vec<_> = ents_iter.collect();
+    let mut ents: Vec<_> = ents_iter.collect();
+
+    ents.push(Entity::new_ground(
+        &mut colliders,
+        &mut bodies,
+        &window_rect.pad_top(window_rect.y.len() - 40.0),
+    ));
 
     let world = PhysicsWorld {
-        mechanical_world: DefaultMechanicalWorld::new(nalgebra::Vector2::new(0.0, -9.81)),
+        mechanical_world: DefaultMechanicalWorld::new(nalgebra::Vector2::new(0.0, -98.1)),
         geometrical_world: DefaultGeometricalWorld::new(),
         bodies: bodies,
         colliders: colliders,
@@ -89,11 +98,10 @@ fn view(app: &App, model: &Model, frame: Frame) {
 
     let win_rect = app.main_window().rect().pad(20.0);
     let text = model.text.as_str();
-    draw.polygon();
     draw.text(text).align_text_top().color(WHITE).font_size(24).wh(win_rect.wh());
 
     for ent in model.ents.iter() {
-        ent.display(&draw, &model.world.bodies, &model.world.colliders);
+        ent.display(&draw, &model.world.colliders);
     }
 
     draw.to_frame(app, &frame).unwrap();

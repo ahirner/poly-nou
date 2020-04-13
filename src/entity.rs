@@ -1,11 +1,12 @@
 use crate::geometry::CommonPoint2;
 use crate::render::Nannou;
 use nalgebra::Isometry2;
+use nannou::color::IntoLinSrgba;
 use nannou::prelude::*;
-use ncollide2d::shape::{ConvexPolygon, Polyline, ShapeHandle};
+use ncollide2d::shape::{ConvexPolygon, Cuboid, Polyline, ShapeHandle};
 use nphysics2d::object::{
     BodyPartHandle, ColliderDesc, DefaultBodyHandle, DefaultBodySet, DefaultColliderHandle,
-    DefaultColliderSet, RigidBodyDesc,
+    DefaultColliderSet, Ground, RigidBodyDesc,
 };
 
 /// A shape with world position, body, annotation and other instance-specific info
@@ -37,7 +38,8 @@ impl Entity {
         // Todo: does Polyline require closed or open?
         //let poly = Polyline::new(vec_vec, None);
         // Todo: make a faux convex shape for now
-        let poly = ConvexPolygon::try_new(vec_vec).unwrap();
+        let poly = ConvexPolygon::try_new(vec_vec)
+            .expect("Could not form convex shape from polygon points");
         let shape = ShapeHandle::new(poly);
 
         let collider_desc = ColliderDesc::new(shape).density(density);
@@ -48,6 +50,36 @@ impl Entity {
             label: None,
             base_color: None,
             body_handle: body_handle,
+            collider_handle: collider_handle,
+        }
+    }
+
+    pub fn new_ground(
+        colliders: &mut DefaultColliderSet<f32>,
+        bodies: &mut DefaultBodySet<f32>,
+        rect: &Rect,
+    ) -> Self {
+        let half_width = (rect.x.end - rect.x.start) / 2.;
+        let center_x = (rect.x.start + rect.x.end) / 2.;
+        let half_height = (rect.y.end - rect.y.start) / 2.;
+        let center_y = (rect.y.start + rect.y.end) / 2.;
+
+        let ground_shape =
+            ShapeHandle::new(Cuboid::new(nalgebra::Vector2::new(half_width, half_height)));
+
+        // Build a static ground body and add it to the body set.
+        let ground_handle = bodies.insert(Ground::new());
+
+        let co = ColliderDesc::new(ground_shape)
+            .translation(pt2(center_x, center_y).into_nalgebra().coords)
+            .build(BodyPartHandle(ground_handle, 0));
+        // Add the collider to the collider set.
+        let collider_handle = colliders.insert(co);
+
+        Entity {
+            label: None,
+            base_color: Some(PURPLE.into_lin_srgba()),
+            body_handle: ground_handle,
             collider_handle: collider_handle,
         }
     }
@@ -64,32 +96,40 @@ impl Entity {
 }
 
 impl Nannou for Entity {
-    fn display(
-        &self,
-        draw: &Draw,
-        bodies: &DefaultBodySet<f32>,
-        colliders: &DefaultColliderSet<f32>,
-    ) {
-        let _body = bodies.rigid_body(self.body_handle).unwrap();
+    fn display(&self, draw: &Draw, colliders: &DefaultColliderSet<f32>) {
         let collider = colliders.get(self.collider_handle).unwrap();
         //let shape = collider.shape().as_shape::<Polyline<f32>>().unwrap();
-        let shape = collider.shape().as_shape::<ConvexPolygon<f32>>().unwrap();
+        let dyn_shape = collider.shape();
 
         let pos: Isometry2<f32> = *collider.position();
         let center: nalgebra::Point2<f32> = pos.clone().translation.vector.into();
-        let points = shape.points().iter().map(|p| (pos * p).into_nannou());
 
-        let draw_poly = draw.polyline().stroke_weight(2.0).join_round().points(points);
+        // Todo: generalize
+        if let Some(shape) = dyn_shape.as_shape::<ConvexPolygon<f32>>() {
+            let draw_label = self.label.as_ref().map_or_else(
+                || draw.text(&format!("{}-gon", shape.points().len())).color(GRAY),
+                |s| draw.text(s).color(WHITE),
+            );
 
-        if let Some(c) = self.base_color {
-            draw_poly.color(c);
+            draw_label.xy(center.into_nannou());
+
+            let points = shape.points().iter().map(|p| (pos * p).into_nannou());
+            let draw_poly = draw.polyline().stroke_weight(2.0).join_round().points(points);
+            if let Some(c) = self.base_color {
+                draw_poly.color(c);
+            };
+        } else if let Some(shape) = dyn_shape.as_shape::<Cuboid<f32>>() {
+            let half_extents = shape.half_extents();
+            let draw_cuboid = draw
+                .rect()
+                .w(half_extents.x * 2.0)
+                .h(half_extents.y * 2.0)
+                .xy(center.into_nannou());
+            if let Some(c) = self.base_color {
+                draw_cuboid.color(c);
+            };
+        } else {
+            unimplemented!("Displaying shape not supported");
         };
-
-        let draw_label = self.label.as_ref().map_or_else(
-            || draw.text(&format!("{}-gon", shape.points().len())).color(GRAY),
-            |s| draw.text(s).color(WHITE),
-        );
-
-        draw_label.xy(center.into_nannou());
     }
 }

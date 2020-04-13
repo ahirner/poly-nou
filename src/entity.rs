@@ -6,7 +6,7 @@ use nannou::prelude::*;
 use ncollide2d::shape::{ConvexPolygon, Cuboid, Polyline, ShapeHandle};
 use nphysics2d::object::{
     BodyPartHandle, ColliderDesc, DefaultBodyHandle, DefaultBodySet, DefaultColliderHandle,
-    DefaultColliderSet, Ground, RigidBodyDesc,
+    DefaultColliderSet, Ground, RigidBody, RigidBodyDesc,
 };
 
 /// A shape with world position, body, annotation and other instance-specific info
@@ -84,14 +84,18 @@ impl Entity {
         }
     }
 
-    pub fn set_body_pos(
-        &mut self,
-        pos: Isometry2<f32>,
+    /// Set body position if the entity has a body (i.e. no ground)
+    pub fn map_body<U, F: FnOnce(&mut RigidBody<f32>) -> U>(
+        &self,
         bodies: &mut DefaultBodySet<f32>,
-    ) -> &mut Self {
-        let body = bodies.rigid_body_mut(self.body_handle).unwrap();
-        body.set_position(pos);
-        self
+        f: F,
+    ) -> Option<U> {
+        let maybe_body = bodies.rigid_body_mut(self.body_handle);
+
+        match maybe_body {
+            Some(body) => Some(f(body)),
+            None => None,
+        }
     }
 }
 

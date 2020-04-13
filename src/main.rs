@@ -52,15 +52,17 @@ fn model(app: &App) -> Model {
 
     let mut rng = thread_rng();
     let window_rect = app.main_window().rect();
+    let spawn_rect = window_rect.pad_bottom(window_rect.y.end);
 
     let ents_iter = (0..20).map(|_i| {
         let poly = rand_poly::<Point2>(rng.gen_range(10, 30), 50.0, 20.0, 0.015);
-        let hue = rng.gen_range(0.0, 1.0);
 
         let pos = Isometry2::translation(
-            rng.gen_range(window_rect.x.start, window_rect.x.end),
-            rng.gen_range(0.0f32, window_rect.y.end),
+            rng.gen_range(spawn_rect.x.start, spawn_rect.x.end),
+            rng.gen_range(spawn_rect.y.start, window_rect.y.end),
         );
+
+        let hue = rng.gen_range(0.0, 1.0);
 
         let mut ent = Entity::new(&mut colliders, &mut bodies, poly, 1.0);
         ent.base_color = Some(hsl(hue, 0.7, 0.5).into_lin_srgba()); // Todo: ergonomics
@@ -73,7 +75,7 @@ fn model(app: &App) -> Model {
     ents.push(Entity::new_ground(
         &mut colliders,
         &mut bodies,
-        &window_rect.pad_top(window_rect.y.len() - 40.0),
+        &window_rect.pad_top(window_rect.y.len() - 40.0).pad_left(20.0).pad_right(20.0),
     ));
 
     let world = PhysicsWorld {

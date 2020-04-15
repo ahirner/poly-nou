@@ -1,6 +1,6 @@
 use crate::geometry::CommonPoint2;
 use crate::render::Nannou;
-use nalgebra::Isometry2;
+use nalgebra::{Isometry2, RealField};
 use nannou::color::IntoLinSrgba;
 use nannou::draw::primitive::polygon::SetPolygon;
 use nannou::draw::properties::{ColorScalar, SetColor};
@@ -10,6 +10,29 @@ use nphysics2d::object::{
     BodyPartHandle, ColliderDesc, DefaultBodyHandle, DefaultBodySet, DefaultColliderHandle,
     DefaultColliderSet, Ground, RigidBody, RigidBodyDesc,
 };
+use std::borrow::Cow;
+
+trait AutoLabel {
+    fn gen_label(&self) -> Cow<str>;
+}
+
+impl<S: RealField> AutoLabel for ConvexPolygon<S> {
+    fn gen_label(&self) -> Cow<str> {
+        Cow::from(format!("{}-gon", self.points().len()))
+    }
+}
+
+impl<S: RealField> AutoLabel for Cuboid<S> {
+    fn gen_label(&self) -> Cow<str> {
+        Cow::from("Cuboid")
+    }
+}
+
+impl<S: RealField> AutoLabel for Polyline<S> {
+    fn gen_label(&self) -> Cow<str> {
+        Cow::from(format!("{}-line", self.points().len()))
+    }
+}
 
 /// A shape with world position, body, annotation and other instance-specific info
 pub struct Entity {
@@ -66,21 +89,21 @@ impl Entity {
         let half_height = rect.y.len() / 2.;
         let center_y = rect.y.middle();
 
-        let ground_shape =
-            ShapeHandle::new(Cuboid::new(nalgebra::Vector2::new(half_width, half_height)));
+        let ground_shape = Cuboid::new(nalgebra::Vector2::new(half_width, half_height));
 
-        let ground_handle = bodies.insert(Ground::new());
+        let shape_handle = ShapeHandle::new(ground_shape);
+        let body_handle = bodies.insert(Ground::new());
 
-        let co = ColliderDesc::new(ground_shape)
+        let co = ColliderDesc::new(shape_handle)
             .translation(CommonPoint2::new(center_x, center_y))
-            .build(BodyPartHandle(ground_handle, 0));
+            .build(BodyPartHandle(body_handle, 0));
 
         let collider_handle = colliders.insert(co);
 
         Entity {
             label: None,
             base_color: None,
-            body_handle: ground_handle,
+            body_handle: body_handle,
             collider_handle: collider_handle,
         }
     }
@@ -139,7 +162,7 @@ impl Nannou for Entity {
         // Todo: generalize
         if let Some(shape) = dyn_shape.as_shape::<ConvexPolygon<f32>>() {
             let draw_label = self.label.as_ref().map_or_else(
-                || draw.text(&format!("{}-gon", shape.points().len())).color(GRAY),
+                || draw.text(shape.gen_label().as_ref()).color(GRAY),
                 |s| draw.text(s).color(WHITE),
             );
             draw_label.xy(center);
@@ -163,10 +186,10 @@ impl Nannou for Entity {
                 .xy(center)
                 .wh(extents); // geometry
 
-            let draw_label = self
-                .label
-                .as_ref()
-                .map_or_else(|| draw.text("Cuboid").color(GRAY), |s| draw.text(s).color(WHITE));
+            let draw_label = self.label.as_ref().map_or_else(
+                || draw.text(shape.gen_label().as_ref()).color(GRAY),
+                |s| draw.text(s).color(WHITE),
+            );
             draw_label.xy(center);
         } else {
             unimplemented!("Displaying shape not supported");

@@ -7,7 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-nannou = {"git" = "https://github.com/nannou-org/nannou"}
+nannou = "0.14.1"
 nphysics2d = "0.15.1"
 rand = "^0.7"
 rand_distr = "^0.2"

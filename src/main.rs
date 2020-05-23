@@ -2,11 +2,12 @@ mod entity;
 mod geometry;
 mod render;
 
-use nalgebra::{Isometry2, RealField};
 use nannou::color::hsl;
 use nannou::prelude::*;
 use nphysics2d::force_generator::DefaultForceGeneratorSet;
 use nphysics2d::joint::DefaultJointConstraintSet;
+use nphysics2d::nalgebra;
+use nphysics2d::nalgebra::{Isometry2, RealField};
 use nphysics2d::object::{DefaultBodySet, DefaultColliderSet};
 
 use crate::entity::Entity;

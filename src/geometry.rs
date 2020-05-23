@@ -1,4 +1,5 @@
 use nannou::prelude::*;
+use nphysics2d::nalgebra;
 use rand::prelude::*;
 use rand_distr::StandardNormal;
 

@@ -1,11 +1,12 @@
 use crate::geometry::CommonPoint2;
 use crate::render::Nannou;
-use nalgebra::{Isometry2, RealField};
 use nannou::color::IntoLinSrgba;
 use nannou::draw::primitive::polygon::SetPolygon;
 use nannou::draw::properties::{ColorScalar, SetColor};
 use nannou::prelude::*;
-use ncollide2d::shape::{ConvexPolygon, Cuboid, Polyline, ShapeHandle};
+use nphysics2d::nalgebra;
+use nphysics2d::nalgebra::{Isometry2, RealField};
+use nphysics2d::ncollide2d::shape::{ConvexPolygon, Cuboid, Polyline, ShapeHandle};
 use nphysics2d::object::{
     BodyPartHandle, ColliderDesc, DefaultBodyHandle, DefaultBodySet, DefaultColliderHandle,
     DefaultColliderSet, Ground, RigidBody, RigidBodyDesc,
